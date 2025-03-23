@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Pitch Data Graph</title>
+</head>
+<body>
+<h1>Real-Time Pitch Data Graph</h1>
+<img id="graph" src="" alt="Pitch Data Graph" />
+
+<script>
+    const eventSource = new EventSource("/graph/updates");
+
+    eventSource.onmessage = function(event) {
+        const img = document.getElementById("graph");
+        img.src = "data:image/png;base64," + event.data;
+    };
+
+    eventSource.onerror = function(event) {
+        console.error("SSE error:", event);
+        eventSource.close();
+    };
+</script>
+</body>
+</html>

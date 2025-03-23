@@ -7,6 +7,12 @@ import dat.entities.AudioFile;
 import dat.service.AudioAnalysisService;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +22,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
+import java.util.*;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 public class AudioController {
     private static final Logger logger = LoggerFactory.getLogger(AudioController.class);
@@ -74,7 +88,6 @@ public class AudioController {
     }
 
 
-
     public void analyzeAllAudioFiles(Context ctx) {
         try {
             List<AudioFile> audioFiles = audioFileDAO.findAll();
@@ -113,7 +126,6 @@ public class AudioController {
             ctx.status(500).json(Map.of("error", "Kunne ikke analysere filer"));
         }
     }
-
 
 
     public void uploadAudio(Context ctx) {
@@ -182,7 +194,73 @@ public class AudioController {
     }
 
 
+    public void showGraph(Context ctx) {
+        try {
+            // Get the audio file ID from the path parameter
+            Long audioFileId = ctx.pathParamAsClass("id", Long.class).get();
 
+            // Get the limit from query parameters (default to 100 if not provided)
+            int limit = ctx.queryParamAsClass("limit", Integer.class).getOrDefault(100);
+            String startTime = ctx.queryParam("startTime"); // Optional: Filter by start time
+            String endTime = ctx.queryParam("endTime");   // Optional: Filter by end time
 
+            // Fetch results for the specific audio file
+            List<AnalysisResult> results;
+            if (startTime != null && endTime != null) {
+                results = analysisResultDAO.findByAudioFileIdAndTimeRange(audioFileId, startTime, endTime, limit);
+            } else {
+                results = analysisResultDAO.findLatestByAudioFile(audioFileId, limit);
+            }
 
+            // Create a dataset for the graph
+            XYSeries series = new XYSeries("Pitch Data for Song ID: " + audioFileId);
+            for (AnalysisResult result : results) {
+                // Clean the resultData string
+                String cleanedResultData = cleanResultData(result.getResultData());
+
+                // Split the cleaned string into individual pitch values
+                String[] pitchValues = cleanedResultData.split(",");
+                for (int i = 0; i < pitchValues.length; i++) {
+                    try {
+                        double pitchValue = Double.parseDouble(pitchValues[i].trim());
+                        series.add(i, pitchValue); // X-axis: index, Y-axis: pitch value
+                    } catch (NumberFormatException e) {
+                        // Log invalid pitch values (optional)
+                        System.err.println("Invalid pitch value: " + pitchValues[i]);
+                    }
+                }
+            }
+
+            // Create the dataset
+            XYSeriesCollection dataset = new XYSeriesCollection();
+            dataset.addSeries(series);
+
+            // Create the chart
+            JFreeChart chart = ChartFactory.createXYLineChart(
+                    "Pitch Data Over Time for Song ID: " + audioFileId, // Chart title
+                    "Time (Index)",         // X-axis label
+                    "Pitch (Hz)",          // Y-axis label
+                    dataset,                // Data
+                    PlotOrientation.VERTICAL,
+                    true,                   // Include legend
+                    true,
+                    false
+            );
+
+            // Save the chart as an image
+            File chartFile = new File("pitch_graph.png");
+            ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
+
+            // Send the image as a response
+            ctx.contentType("image/png");
+            ctx.result(Files.readAllBytes(chartFile.toPath()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ctx.status(500).json(Map.of("error", "Kunne ikke generere graf"));
+        }
+    }
+    private String cleanResultData(String resultData) {
+        // Remove all non-numeric characters (except commas and periods)
+        return resultData.replaceAll("[^\\d.,]", "");
+    }
 }

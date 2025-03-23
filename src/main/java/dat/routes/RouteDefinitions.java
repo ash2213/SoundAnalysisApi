@@ -28,6 +28,9 @@ public class RouteDefinitions {
                 get("/analyze-all", audioController::analyzeAllAudioFiles);
                 get("/results", audioController::getAllAnalysisResults);
                 get("/analyze/{id}", audioController::analyzeSingleAudioFile);
+                get("/graph/{id}", audioController::showGraph);
+                // get("/graph/updates", audioController::streamGraphUpdates);
+
 
             });
         };
