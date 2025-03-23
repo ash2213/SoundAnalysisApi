@@ -36,31 +36,33 @@ public class AudioController {
 
     public void analyzeSingleAudioFile(Context ctx) {
         try {
+            logger.info("Received request to analyze single file.");
             Long fileId = Long.parseLong(ctx.pathParam("id"));  // e.g., /analyze/1
-            AudioFile audioFile = audioFileDAO.findById(fileId);
+            logger.info("Parsed file ID: {}", fileId);
 
+            AudioFile audioFile = audioFileDAO.findById(fileId);
             if (audioFile == null) {
                 ctx.status(404).result("Audio file not found.");
                 return;
             }
 
-            // Construct path to the saved file
             Path filePath = Paths.get(System.getProperty("java.io.tmpdir"), audioFile.getFilename());
             File file = filePath.toFile();
+            logger.info("Constructed file path: {}", filePath);
 
             if (!file.exists()) {
                 ctx.status(404).result("Audio file not found in temp directory.");
                 return;
             }
 
-            // Analyze the file
+            logger.info("Starting analysis...");
             String result = audioAnalysisService.analyzeFile(file);
+            logger.info("Analysis result: {}", result);
 
-            // Save result to DB
             AnalysisResult analysisResult = new AnalysisResult(audioFile, result);
             analysisResultDAO.save(analysisResult);
+            logger.info("Saved analysis result to DB.");
 
-            // Return result
             ctx.json(Map.of(
                     "file", audioFile.getFilename(),
                     "result", result
@@ -68,10 +70,11 @@ public class AudioController {
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid file ID.");
         } catch (Exception e) {
-            logger.error("Error analyzing file", e);
+            logger.error("Error analyzing file", e);  // Check console/log file for stack trace
             ctx.status(500).result("Internal Server Error");
         }
     }
+
 
 
 
