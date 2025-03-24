@@ -23,15 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartUtils;
-import org.jfree.chart.JFreeChart;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 public class AudioController {
@@ -40,7 +31,6 @@ public class AudioController {
     private final AudioFileDAO audioFileDAO;
     private final AnalysisResultDAO analysisResultDAO;
 
-    // Constructor
     public AudioController(AudioAnalysisService audioAnalysisService, AudioFileDAO audioFileDAO, AnalysisResultDAO analysisResultDAO) {
         this.audioAnalysisService = audioAnalysisService;
         this.audioFileDAO = audioFileDAO;
@@ -143,29 +133,39 @@ public class AudioController {
             InputStream fileContent = uploadedFile.content();
             Path tempPath = Paths.get(System.getProperty("java.io.tmpdir"), fileName);
             Files.copy(fileContent, tempPath, StandardCopyOption.REPLACE_EXISTING);
+            File audioFile = tempPath.toFile();
 
             // Save metadata to DB
             AudioFile audioFileEntity = new AudioFile(fileName, fileSize);
+
+            // ✅ BPM Detection
+            BPMDetector bpmDetector = new BPMDetector();
+            double bpm = bpmDetector.detectBPM(audioFile);
+            audioFileEntity.setBpm(bpm);
+
             audioFileDAO.save(audioFileEntity);
 
-            // ✅ Analyze the file with TarsosDSP
-            String analysisResult = audioAnalysisService.analyzeFile(tempPath.toFile());
+            // ✅ Pitch Analysis
+            String analysisResult = audioAnalysisService.analyzeFile(audioFile);
 
-            // ✅ Save the analysis result to DB
+            // ✅ Save analysis result
             AnalysisResult result = new AnalysisResult(audioFileEntity, analysisResult);
-            analysisResultDAO.save(result);  // Make sure this DAO is initialized
+            analysisResultDAO.save(result);
 
-            // ✅ Send back response with analysis summary
+            // ✅ Send back response
             ctx.json(Map.of(
                     "status", "success",
                     "file", fileName,
+                    "bpm", bpm,
                     "message", analysisResult
             ));
+
         } catch (Exception e) {
             e.printStackTrace();
             ctx.status(500).json(Map.of("error", "Kunne ikke analysere lydfil"));
         }
     }
+
 
     public void getAllAudioFiles(Context ctx) {
         try {

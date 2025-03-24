@@ -9,11 +9,11 @@ public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-        int port = 7070;
+        int port = 7000;
 
         ApplicationConfig.getInstance()
                 .initiateServer()
-                .setRoute(RouteDefinitions.getRoutes())  // Brug routes fra separat klasse
+                .setRoute(RouteDefinitions.getRoutes())
                 .handleException()
                 .startServer(port);
 
