@@ -58,34 +58,4 @@ public class AudioAnalysisService {
         }
     }
 
-
-    public double analyzeBPM(File audioFile) throws Exception {
-        List<Double> onsetTimes = new ArrayList<>();
-
-        AudioDispatcher dispatcher = AudioDispatcherFactory.fromFile(audioFile, 2048, 1024);
-
-        ComplexOnsetDetector onsetDetector = new ComplexOnsetDetector(2048, 1024, 44100);
-        onsetDetector.setHandler(new OnsetHandler() {
-            @Override
-            public void handleOnset(double time, double salience) {
-                onsetTimes.add(time);
-            }
-        });
-
-        dispatcher.addAudioProcessor(onsetDetector);
-        dispatcher.run();
-
-        // Calculate intervals between onsets
-        List<Double> intervals = new ArrayList<>();
-        for (int i = 1; i < onsetTimes.size(); i++) {
-            intervals.add(onsetTimes.get(i) - onsetTimes.get(i - 1));
-        }
-
-        // Calculate average interval
-        double avgInterval = intervals.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        double bpm = avgInterval > 0 ? 60.0 / avgInterval : 0.0;
-
-        return Math.round(bpm * 100.0) / 100.0;  // Round to 2 decimal places
-    }
-
 }
