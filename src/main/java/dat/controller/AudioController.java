@@ -2,8 +2,10 @@ package dat.controller;
 
 import dat.dao.AnalysisResultDAO;
 import dat.dao.AudioFileDAO;
+import dat.dtos.AnalysisResponseDTO;
 import dat.entities.AnalysisResult;
 import dat.entities.AudioFile;
+import dat.exceptions.ApiException;
 import dat.service.AudioAnalysisService;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
@@ -17,13 +19,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class AudioController {
     private static final Logger logger = LoggerFactory.getLogger(AudioController.class);
@@ -38,7 +47,6 @@ public class AudioController {
     }
 
 
-
     public void uploadAudio(Context ctx) {
         try {
             UploadedFile uploadedFile = ctx.uploadedFile("audio");
@@ -48,44 +56,32 @@ public class AudioController {
             }
 
             String fileName = uploadedFile.filename();
-            long fileSize = uploadedFile.size();
-
-            // Save temp file
             InputStream fileContent = uploadedFile.content();
             Path tempPath = Paths.get(System.getProperty("java.io.tmpdir"), fileName);
             Files.copy(fileContent, tempPath, StandardCopyOption.REPLACE_EXISTING);
             File audioFile = tempPath.toFile();
 
-            // Save metadata to DB
-            AudioFile audioFileEntity = new AudioFile(fileName, fileSize);
+            // 🔍 Analyse + pitch values
+            AnalysisResponseDTO response = audioAnalysisService.analyzeFile(audioFile);
+            AnalysisResult result = response.getResult();
+            List<Double> pitchValues = response.getSmoothedPitchValues();
 
-            // ✅ BPM Detection
-            BPMDetector bpmDetector = new BPMDetector();
-            double bpm = bpmDetector.detectBPM(audioFile);
-            audioFileEntity.setBpm(bpm);
+            // 📈 Lav graf direkte
+            JFreeChart chart = createChartFromPitchList(pitchValues);
+            File chartFile = new File("pitch_graph.png");
+            ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
 
-            audioFileDAO.save(audioFileEntity);
-
-            // ✅ Pitch Analysis
-            String analysisResult = audioAnalysisService.analyzeFile(audioFile);
-
-            // ✅ Save analysis result
-            AnalysisResult result = new AnalysisResult(audioFileEntity, analysisResult);
-            analysisResultDAO.save(result);
-
-            // ✅ Send back response
-            ctx.json(Map.of(
-                    "status", "success",
-                    "file", fileName,
-                    "bpm", bpm,
-                    "message", analysisResult
-            ));
+            // 📤 Send grafen og data
+            ctx.contentType("image/png");
+            ctx.header("X-Audio-Info", "bpm=" + result.getAudioFile().getBpm());
+            ctx.result(Files.readAllBytes(chartFile.toPath()));
 
         } catch (Exception e) {
             e.printStackTrace();
             ctx.status(500).json(Map.of("error", "Kunne ikke analysere lydfil"));
         }
     }
+
 
 
     public void getAllAudioFiles(Context ctx) {
@@ -117,71 +113,61 @@ public class AudioController {
 
     public void showGraph(Context ctx) {
         try {
-            // Get the audio file ID from the path parameter
             Long audioFileId = ctx.pathParamAsClass("id", Long.class).get();
-
-            // Get the limit from query parameters (default to 100 if not provided)
             int limit = ctx.queryParamAsClass("limit", Integer.class).getOrDefault(100);
-            String startTime = ctx.queryParam("startTime"); // Optional: Filter by start time
-            String endTime = ctx.queryParam("endTime");   // Optional: Filter by end time
 
-            // Fetch results for the specific audio file
-            List<AnalysisResult> results;
-            if (startTime != null && endTime != null) {
-                results = analysisResultDAO.findByAudioFileIdAndTimeRange(audioFileId, startTime, endTime, limit);
-            } else {
-                results = analysisResultDAO.findLatestByAudioFile(audioFileId, limit);
-            }
+            List<AnalysisResult> results = analysisResultDAO.findLatestByAudioFile(audioFileId, limit);
 
-            // Create a dataset for the graph
-            XYSeries series = new XYSeries("Pitch Data for Song ID: " + audioFileId);
+            XYSeries series = new XYSeries("Pitch Data");
             for (AnalysisResult result : results) {
-                // Clean the resultData string
-                String cleanedResultData = cleanResultData(result.getResultData());
-
-                // Split the cleaned string into individual pitch values
-                String[] pitchValues = cleanedResultData.split(",");
-                for (int i = 0; i < pitchValues.length; i++) {
+                String[] values = result.getResultData().split(",");
+                for (int i = 0; i < values.length; i++) {
                     try {
-                        double pitchValue = Double.parseDouble(pitchValues[i].trim());
-                        series.add(i, pitchValue); // X-axis: index, Y-axis: pitch value
-                    } catch (NumberFormatException e) {
-                        // Log invalid pitch values (optional)
-                        System.err.println("Invalid pitch value: " + pitchValues[i]);
-                    }
+                        double pitch = Double.parseDouble(values[i].trim());
+                        if (pitch >= 20 && pitch <= 4000) {
+                            series.add(i, pitch);
+                        }
+                    } catch (NumberFormatException ignore) {}
                 }
             }
 
-            // Create the dataset
-            XYSeriesCollection dataset = new XYSeriesCollection();
-            dataset.addSeries(series);
-
-            // Create the chart
+            XYSeriesCollection dataset = new XYSeriesCollection(series);
             JFreeChart chart = ChartFactory.createXYLineChart(
-                    "Pitch Data Over Time for Song ID: " + audioFileId, // Chart title
-                    "Time (Index)",         // X-axis label
-                    "Pitch (Hz)",          // Y-axis label
-                    dataset,                // Data
-                    PlotOrientation.VERTICAL,
-                    true,                   // Include legend
-                    true,
-                    false
+                    "Pitch Graph", "Time", "Pitch (Hz)",
+                    dataset, PlotOrientation.VERTICAL, false, true, false
             );
 
-            // Save the chart as an image
             File chartFile = new File("pitch_graph.png");
             ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
 
-            // Send the image as a response
             ctx.contentType("image/png");
             ctx.result(Files.readAllBytes(chartFile.toPath()));
+
         } catch (Exception e) {
             e.printStackTrace();
             ctx.status(500).json(Map.of("error", "Kunne ikke generere graf"));
         }
     }
-    private String cleanResultData(String resultData) {
-        // Remove all non-numeric characters (except commas and periods)
-        return resultData.replaceAll("[^\\d.,]", "");
+
+
+    private JFreeChart createChartFromPitchList(List<Double> pitchValues) {
+        XYSeries series = new XYSeries("Pitch");
+        for (int i = 0; i < pitchValues.size(); i++) {
+            double pitch = pitchValues.get(i);
+            if (pitch >= 20 && pitch <= 4000) {
+                series.add(i, pitch);
+            }
+        }
+
+        XYSeriesCollection dataset = new XYSeriesCollection(series);
+        return ChartFactory.createXYLineChart(
+                "Live Pitch Graph",
+                "Time (Index)",
+                "Pitch (Hz)",
+                dataset,
+                PlotOrientation.VERTICAL,
+                false, true, false
+        );
     }
+
 }

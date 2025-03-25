@@ -20,17 +20,21 @@ public class AnalysisResult {
     private AudioFile audioFile;
 
     @Lob
+    @Column(name = "result_data", columnDefinition = "TEXT")
     private String resultData;
 
     private LocalDateTime analyzedAt;
 
     public AnalysisResult() {}
 
-    public AnalysisResult(AudioFile audioFile, String resultData) {
+    private AnalysisResult(AudioFile audioFile, String resultData) {
         this.audioFile = audioFile;
         this.resultData = resultData;
         this.analyzedAt = LocalDateTime.now();
     }
 
-    // Getters and setters
+    public static AnalysisResult fromPitchData(AudioFile audioFile, String resultData) {
+        return new AnalysisResult(audioFile, resultData);
+    }
+
 }
