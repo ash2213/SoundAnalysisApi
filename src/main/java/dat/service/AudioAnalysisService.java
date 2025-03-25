@@ -25,7 +25,6 @@ public class AudioAnalysisService {
         }
 
         try {
-            // Basic audio dispatcher
             final int bufferSize = 2048;
             final int overlap = 1024;
             AudioDispatcher dispatcher = AudioDispatcherFactory.fromFile(audioFile, bufferSize, overlap);
@@ -45,7 +44,6 @@ public class AudioAnalysisService {
                     handler
             ));
 
-            // Run the dispatcher
             dispatcher.run();
 
             String analysis = "🎵 Pitch values:\n" + pitchResults;
