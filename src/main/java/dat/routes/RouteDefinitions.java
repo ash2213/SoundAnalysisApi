@@ -25,9 +25,7 @@ public class RouteDefinitions {
             path("/audio", () -> {
                 post("/upload", audioController::uploadAudio);
                 get("/file", audioController::getAllAudioFiles);
-                get("/analyze-all", audioController::analyzeAllAudioFiles);
                 get("/result", audioController::getAllAnalysisResults);
-                get("/analyze/{id}", audioController::analyzeSingleAudioFile);
                 get("/graph/{id}", audioController::showGraph);
                 // get("/graph/updates", audioController::streamGraphUpdates);
 
