@@ -1,25 +1,12 @@
-# Use Eclipse Temurin as base image for Java 17
-FROM eclipse-temurin:17-jdk as build
-
-# Set working directory
+# 🏗️ Build stage
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
-
-# Copy project files
 COPY . .
+RUN mvn clean package -DskipTests
 
-# Package the application (skip tests for speed, optional)
-RUN ./mvnw clean package -DskipTests || mvn clean package -DskipTests
-
-# --- Final stage ---
+# 🚀 Final image
 FROM eclipse-temurin:17-jdk
-
 WORKDIR /app
-
-# Copy built JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
-
-# Expose port
 EXPOSE 7000
-
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
