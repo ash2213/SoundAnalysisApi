@@ -19,7 +19,7 @@
         <jackson.version>2.17.0</jackson.version>
         <restassured.version>5.4.0</restassured.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <tarsos.version>2.4</tarsos.version> <!-- Working version tag -->
+        <tarsos.version>2.4</tarsos.version>
     </properties>
 
     <dependencies>
@@ -30,7 +30,7 @@
             <version>${javalin.version}</version>
         </dependency>
 
-        <!-- 🔹 Jackson Core + JSR310 (Java Time) -->
+        <!-- 🔹 Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -85,7 +85,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 🔹 RestAssured for API Testing -->
+        <!-- 🔹 RestAssured -->
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
@@ -101,7 +101,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 🔹 TarsosDSP via JitPack -->
+        <!-- 🔹 TarsosDSP -->
         <dependency>
             <groupId>be.tarsos.dsp</groupId>
             <artifactId>core</artifactId>
@@ -112,8 +112,6 @@
             <artifactId>jvm</artifactId>
             <version>2.5</version>
         </dependency>
-
-
     </dependencies>
 
     <repositories>
@@ -124,10 +122,9 @@
         </repository>
     </repositories>
 
-
     <build>
         <plugins>
-            <!-- Maven Compiler Plugin -->
+            <!-- 🔹 Maven Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -138,7 +135,21 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven Surefire for running tests -->
+            <!-- 🔹 Maven JAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>dat.Main</mainClass> <!-- ← RET denne hvis nødvendigt -->
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <!-- 🔹 Maven Surefire (JUnit) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
