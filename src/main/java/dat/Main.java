@@ -11,6 +11,8 @@ public class Main {
     public static void main(String[] args) {
         int port = 7000;
 
+
+
         ApplicationConfig.getInstance()
                 .initiateServer()
                 .setRoute(RouteDefinitions.getRoutes())  // Brug routes fra separat klasse
