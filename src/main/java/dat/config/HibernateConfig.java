@@ -88,7 +88,7 @@ public class HibernateConfig {
 
     private static Properties setDeployedProperties(Properties props) {
         String dbName = System.getenv("DB_NAME");
-        String connectionStr = System.getenv("CONNECTION_STR"); // fx: jdbc:postgresql://db-1:5432/
+        String connectionStr = System.getenv("SOUND_CONNECTION_STR"); // fx: jdbc:postgresql://db-1:5432/
         String username = System.getenv("DB_USERNAME");
         String password = System.getenv("DB_PASSWORD");
 
