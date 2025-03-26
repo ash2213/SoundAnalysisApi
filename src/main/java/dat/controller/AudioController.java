@@ -3,10 +3,12 @@ package dat.controller;
 import dat.dao.AnalysisResultDAO;
 import dat.dao.AudioFileDAO;
 import dat.dtos.AnalysisResponseDTO;
+import dat.dtos.PitchPointDTO;
 import dat.entities.AnalysisResult;
 import dat.entities.AudioFile;
 import dat.exceptions.ApiException;
 import dat.service.AudioAnalysisService;
+import dat.service.ChartUtilsHelper;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import org.jfree.chart.ChartFactory;
@@ -18,6 +20,9 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -61,17 +66,17 @@ public class AudioController {
             Files.copy(fileContent, tempPath, StandardCopyOption.REPLACE_EXISTING);
             File audioFile = tempPath.toFile();
 
-            // 🔍 Analyse + pitch values
+            // Analyse og pitch data med timestamp
             AnalysisResponseDTO response = audioAnalysisService.analyzeFile(audioFile);
             AnalysisResult result = response.getResult();
-            List<Double> pitchValues = response.getSmoothedPitchValues();
+            List<PitchPointDTO> pitchPoints = response.getPitchPoints();
 
-            // 📈 Lav graf direkte
-            JFreeChart chart = createChartFromPitchList(pitchValues);
+            // Generer graf
+            JFreeChart chart = ChartUtilsHelper.createChartFromPitchPoints(pitchPoints);
             File chartFile = new File("pitch_graph.png");
             ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
 
-            // 📤 Send grafen og data
+            // Send graf og info
             ctx.contentType("image/png");
             ctx.header("X-Audio-Info", "bpm=" + result.getAudioFile().getBpm());
             ctx.result(Files.readAllBytes(chartFile.toPath()));
@@ -81,6 +86,7 @@ public class AudioController {
             ctx.status(500).json(Map.of("error", "Kunne ikke analysere lydfil"));
         }
     }
+
 
 
 
@@ -110,32 +116,58 @@ public class AudioController {
         }
     }
 
-
     public void showGraph(Context ctx) {
         try {
             Long audioFileId = ctx.pathParamAsClass("id", Long.class).get();
-            int limit = ctx.queryParamAsClass("limit", Integer.class).getOrDefault(100);
 
-            List<AnalysisResult> results = analysisResultDAO.findLatestByAudioFile(audioFileId, limit);
-
-            XYSeries series = new XYSeries("Pitch Data");
-            for (AnalysisResult result : results) {
-                String[] values = result.getResultData().split(",");
-                for (int i = 0; i < values.length; i++) {
-                    try {
-                        double pitch = Double.parseDouble(values[i].trim());
-                        if (pitch >= 20 && pitch <= 4000) {
-                            series.add(i, pitch);
-                        }
-                    } catch (NumberFormatException ignore) {}
-                }
+            // Hent analysedata
+            List<AnalysisResult> results = analysisResultDAO.findLatestByAudioFile(audioFileId, 1); // Én seneste analyse
+            if (results.isEmpty()) {
+                ctx.status(404).json(Map.of("error", "Ingen analyseresultater fundet for ID: " + audioFileId));
+                return;
             }
 
+            AnalysisResult result = results.get(0);
+            String pitchData = result.getResultData();
+            String[] pitchTokens = pitchData.split(",");
+
+            // Hent audiofilens længde i sekunder
+            AudioFile audioFile = audioFileDAO.findById(audioFileId);
+            double durationInSeconds = getAudioFileDuration(audioFile.getFilename());
+
+            int numPitches = pitchTokens.length;
+            double timeStep = durationInSeconds / numPitches;
+
+            XYSeries series = new XYSeries("Pitch");
+            double minPitch = Double.MAX_VALUE;
+            double maxPitch = Double.MIN_VALUE;
+
+            for (int i = 0; i < pitchTokens.length; i++) {
+                try {
+                    double pitch = Double.parseDouble(pitchTokens[i].trim());
+                    if (pitch >= 20 && pitch <= 4000) {
+                        double time = i * timeStep;
+                        series.add(time, pitch);
+                        minPitch = Math.min(minPitch, pitch);
+                        maxPitch = Math.max(maxPitch, pitch);
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            // 📈 Lav graf
             XYSeriesCollection dataset = new XYSeriesCollection(series);
             JFreeChart chart = ChartFactory.createXYLineChart(
-                    "Pitch Graph", "Time", "Pitch (Hz)",
-                    dataset, PlotOrientation.VERTICAL, false, true, false
+                    "Pitch Graph for Audio ID: " + audioFileId,
+                    "Tid (sekunder)",
+                    "Pitch (Hz)",
+                    dataset,
+                    PlotOrientation.VERTICAL,
+                    false, true, false
             );
+
+            if (series.getItemCount() > 0) {
+                chart.getXYPlot().getRangeAxis().setRange(minPitch - 10, maxPitch + 10);
+            }
 
             File chartFile = new File("pitch_graph.png");
             ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
@@ -150,24 +182,15 @@ public class AudioController {
     }
 
 
-    private JFreeChart createChartFromPitchList(List<Double> pitchValues) {
-        XYSeries series = new XYSeries("Pitch");
-        for (int i = 0; i < pitchValues.size(); i++) {
-            double pitch = pitchValues.get(i);
-            if (pitch >= 20 && pitch <= 4000) {
-                series.add(i, pitch);
-            }
+    public double getAudioFileDuration(String filename) throws Exception {
+        File file = new File(System.getProperty("java.io.tmpdir"), filename);
+        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(file)) {
+            AudioFormat format = audioInputStream.getFormat();
+            long frames = audioInputStream.getFrameLength();
+            return frames / format.getFrameRate();
         }
-
-        XYSeriesCollection dataset = new XYSeriesCollection(series);
-        return ChartFactory.createXYLineChart(
-                "Live Pitch Graph",
-                "Time (Index)",
-                "Pitch (Hz)",
-                dataset,
-                PlotOrientation.VERTICAL,
-                false, true, false
-        );
     }
+
+
 
 }

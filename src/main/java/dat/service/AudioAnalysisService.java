@@ -10,6 +10,7 @@ import dat.controller.BPMDetector;
 import dat.dao.AnalysisResultDAO;
 import dat.dao.AudioFileDAO;
 import dat.dtos.AnalysisResponseDTO;
+import dat.dtos.PitchPointDTO;
 import dat.entities.AnalysisResult;
 import dat.entities.AudioFile;
 import dat.exceptions.ApiException;
@@ -22,22 +23,23 @@ import java.util.List;
 public class AudioAnalysisService {
 
     public AnalysisResponseDTO analyzeFile(File audioFile) {
-        System.out.println("🎧 Analyzing file: " + audioFile.getAbsolutePath());
+        System.out.println("\uD83C\uDFA7 Analyzing file: " + audioFile.getAbsolutePath());
 
         if (!audioFile.exists() || !audioFile.isFile()) {
-            throw new RuntimeException("🚫 Invalid file");
+            throw new RuntimeException("\uD83D\uDEAB Invalid file");
         }
 
         try {
             final int bufferSize = 2048;
             final int overlap = 1024;
-            AudioDispatcher dispatcher = AudioDispatcherFactory.fromFile(audioFile, bufferSize, overlap);
 
-            List<Double> pitchValues = new ArrayList<>();
+            AudioDispatcher dispatcher = AudioDispatcherFactory.fromFile(audioFile, bufferSize, overlap);
+            List<PitchPointDTO> pitchPoints = new ArrayList<>();
+
             PitchDetectionHandler handler = (PitchDetectionResult result, AudioEvent e) -> {
                 float pitch = result.getPitch();
                 if (pitch > 50 && pitch < 4000) {
-                    pitchValues.add((double) pitch);
+                    pitchPoints.add(new PitchPointDTO(e.getTimeStamp(), pitch));
                 }
             };
 
@@ -50,13 +52,11 @@ public class AudioAnalysisService {
 
             dispatcher.run();
 
-            List<Double> smoothed = smoothData(pitchValues, 5);
-            String pitchDataString = smoothed.stream()
-                    .map(p -> String.format("%.2f", p))
-                    .reduce((p1, p2) -> p1 + "," + p2)
-                    .orElse("NO_DATA");
+            String pitchDataString = pitchPoints.stream()
+                    .map(p -> String.format("%.2f", p.getPitch()))
+                    .reduce((a, b) -> a + "," + b)
+                    .orElse("");
 
-            // DB: Gem AudioFile + BPM + AnalysisResult (som før)
             AudioFileDAO audioFileDAO = new AudioFileDAO();
             AnalysisResultDAO analysisResultDAO = new AnalysisResultDAO();
 
@@ -77,17 +77,21 @@ public class AudioAnalysisService {
                 result.setAnalyzedAt(LocalDateTime.now());
                 analysisResultDAO.merge(result);
             } else {
-                result = AnalysisResult.fromPitchData(audioFileEntity, pitchDataString);
+                result = new AnalysisResult();
+                result.setAudioFile(audioFileEntity);
+                result.setResultData(pitchDataString);
+                result.setAnalyzedAt(LocalDateTime.now());
                 analysisResultDAO.save(result);
             }
 
-            return new AnalysisResponseDTO(result, smoothed);
+            return new AnalysisResponseDTO(result, pitchPoints);
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new ApiException(500, "Kunne ikke analysere lydfil: " + e.getMessage());
         }
     }
+
 
     private List<Double> smoothData(List<Double> data, int windowSize) {
         List<Double> smoothed = new ArrayList<>();
