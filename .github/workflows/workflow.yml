@@ -1,4 +1,4 @@
-name: CI/CD WORKFLOW
+name: deployable
 
 on:
   push:
@@ -19,15 +19,6 @@ jobs:
           distribution: 'corretto'
 
       - name: Build with Maven
-        env:
-          DEPLOYED: true
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          CONNECTION_STR: ${{ secrets.CONNECTION_STR }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          ISSUER: ${{ secrets.ISSUER }}
-          TOKEN_EXPIRE_TIME: ${{ secrets.TOKEN_EXPIRE_TIME }}
         run: mvn --batch-mode clean package
 
       - name: Login to DockerHub
@@ -46,3 +37,12 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/soundanalysis-api:latest
+          build-args: |
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            CONNECTION_STR=${{ secrets.CONNECTION_STR }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            ISSUER=${{ secrets.ISSUER }}
+            TOKEN_EXPIRE_TIME=${{ secrets.TOKEN_EXPIRE_TIME }}
+            DEPLOYED=true
