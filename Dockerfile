@@ -8,5 +8,6 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
 COPY --from=build /app/target/SoundAnalysisApi-1.0-SNAPSHOT-shaded.jar app.jar
+COPY src/main/resources/config.properties src/main/resources/
 EXPOSE 7000
 ENTRYPOINT ["java", "-jar", "app.jar"]
