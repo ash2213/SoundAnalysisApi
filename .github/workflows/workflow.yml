@@ -20,7 +20,11 @@ jobs:
 
       - name: Build with Maven
         env:
-          DEPLOYED: ${{ secrets.DEPLOYED }}
+          DEPLOYED: true
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          CONNECTION_STR: ${{ secrets.CONNECTION_STR }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           ISSUER: ${{ secrets.ISSUER }}
           TOKEN_EXPIRE_TIME: ${{ secrets.TOKEN_EXPIRE_TIME }}

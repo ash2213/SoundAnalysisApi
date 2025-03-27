@@ -41,8 +41,8 @@ public class HibernateConfig {
 
     // TODO: IMPORTANT: Add Entity classes here for them to be registered with Hibernate
     private static void getAnnotationConfiguration(Configuration configuration) {
-           configuration.addAnnotatedClass(AudioFile.class);
-           configuration.addAnnotatedClass(AnalysisResult.class);
+        configuration.addAnnotatedClass(AnalysisResult.class);
+        configuration.addAnnotatedClass(AudioFile.class);
 
     }
 
@@ -78,7 +78,7 @@ public class HibernateConfig {
     private static Properties setBaseProperties(Properties props) {
         props.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         props.put("hibernate.connection.driver_class", "org.postgresql.Driver");
-        props.put("hibernate.hbm2ddl.auto", "update");
+        props.put("hibernate.hbm2ddl.auto", "create");
         props.put("hibernate.current_session_context_class", "thread");
         props.put("hibernate.show_sql", "true");
         props.put("hibernate.format_sql", "true");
@@ -87,21 +87,12 @@ public class HibernateConfig {
     }
 
     private static Properties setDeployedProperties(Properties props) {
-        String dbName = System.getenv("DB_NAME");
-        String connectionStr = System.getenv("SOUND_CONNECTION_STR"); // fx: jdbc:postgresql://db-1:5432/
-        String username = System.getenv("DB_USERNAME");
-        String password = System.getenv("DB_PASSWORD");
-
-        if (connectionStr == null || dbName == null || username == null || password == null) {
-            throw new RuntimeException("Missing one or more environment variables for deployed DB connection");
-        }
-
-        props.setProperty("hibernate.connection.url", connectionStr + dbName);
-        props.setProperty("hibernate.connection.username", username);
-        props.setProperty("hibernate.connection.password", password);
+        String DBName = System.getenv("DB_NAME");
+        props.setProperty("hibernate.connection.url", System.getenv("CONNECTION_STR") + DBName);
+        props.setProperty("hibernate.connection.username", System.getenv("DB_USERNAME"));
+        props.setProperty("hibernate.connection.password", System.getenv("DB_PASSWORD"));
         return props;
     }
-
 
     private static Properties setDevProperties(Properties props) {
         String DBName = Utils.getPropertyValue("DB_NAME", "config.properties");
