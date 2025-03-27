@@ -87,19 +87,20 @@ public class HibernateConfig {
     }
 
     private static Properties setDeployedProperties(Properties props) {
-        String DBName = System.getenv("DB_NAME");
-        String connectionStr = System.getenv("CONNECTION_STR");
+        String connectionStr = System.getenv("CONNECTION_STR");  // Skal være hele URL'en
+        String username = System.getenv("DB_USERNAME");
+        String password = System.getenv("DB_PASSWORD");
 
-        if (connectionStr == null || DBName == null) {
-            throw new RuntimeException("Environment variables DB_NAME or CONNECTION_STR are not set");
+        if (connectionStr == null || username == null || password == null) {
+            throw new RuntimeException("Missing environment variables for DB connection");
         }
 
-        // Ensure the URL is formed correctly without adding DB_NAME twice
-        props.setProperty("hibernate.connection.url", connectionStr + DBName);
-        props.setProperty("hibernate.connection.username", System.getenv("DB_USERNAME"));
-        props.setProperty("hibernate.connection.password", System.getenv("DB_PASSWORD"));
+        props.setProperty("hibernate.connection.url", connectionStr);
+        props.setProperty("hibernate.connection.username", username);
+        props.setProperty("hibernate.connection.password", password);
         return props;
     }
+
 
     private static Properties setDevProperties(Properties props) {
         String DBName = Utils.getPropertyValue("DB_NAME", "config.properties");
