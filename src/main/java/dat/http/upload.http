@@ -1,0 +1,82 @@
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="even.wav"
+Content-Type: audio/wav
+
+< even.wav
+--boundary--
+
+###
+
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="test.wav"
+Content-Type: audio/wav
+
+< test.wav
+--boundary--
+
+###
+
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="piano.wav"
+Content-Type: audio/wav
+
+< piano.wav
+--boundary--
+
+
+###
+
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="edm_music.wav"
+Content-Type: audio/wav
+
+< edm_music.wav
+--boundary--
+
+###
+
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="bass.wav"
+Content-Type: audio/wav
+
+< bass.wav
+--boundary--
+
+###
+
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="melody.wav"
+Content-Type: audio/wav
+
+< melody.wav
+--boundary--
+
+###
+
+POST http://localhost:7000/api/audio/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="audio"; filename="guitar.wav"
+Content-Type: audio/wav
+
+< guitar.wav
+--boundary--

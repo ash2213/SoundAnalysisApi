@@ -10,21 +10,21 @@ public class AudioFileDAO extends AbstractDAO<AudioFile> {
         super(AudioFile.class);
     }
 
-    public AudioFile findByFileName(String fileName) throws ApiException {
+    public AudioFile findByFileName(String fileName) {
         EntityManager em = emf.createEntityManager();
         try {
             List<AudioFile> results = em.createQuery(
                             "SELECT a FROM AudioFile a WHERE a.filename = :fileName", AudioFile.class)
                     .setParameter("fileName", fileName)
                     .getResultList();
-
-            if (results.isEmpty()) {
-                throw new ApiException(404, "File not found");
-            }
-            return results.get(0);
+            return results.isEmpty() ? null : results.get(0); // Return null if file is not found
         } finally {
             em.close();
         }
     }
+
+
+
+
 }
 

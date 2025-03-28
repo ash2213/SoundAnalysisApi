@@ -1,6 +1,7 @@
 package dat.dao;
 
 import dat.config.HibernateConfig;
+import dat.entities.AnalysisResult;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -36,6 +37,11 @@ public abstract class AbstractDAO<T> {
     public void save(T entity) {
         EntityManager em = emf.createEntityManager();
         try {
+            if (entity instanceof AnalysisResult r) {
+                if (r.getResultData().matches("^\\d+$")) {
+                    throw new RuntimeException("❌ Trying to save numeric-only resultData: " + r.getResultData());
+                }
+            }
             em.getTransaction().begin();
             em.persist(entity);
             em.getTransaction().commit();
@@ -61,6 +67,20 @@ public abstract class AbstractDAO<T> {
             em.getTransaction().begin();
             em.remove(em.contains(entity) ? entity : em.merge(entity));
             em.getTransaction().commit();
+        } finally {
+            em.close();
+        }
+    }
+
+    public void merge(T entity) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            em.getTransaction().begin();
+            em.merge(entity);  // Merge will update the existing record
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            em.getTransaction().rollback();
+            throw e;
         } finally {
             em.close();
         }

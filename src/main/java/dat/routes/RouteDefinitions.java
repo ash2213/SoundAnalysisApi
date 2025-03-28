@@ -24,10 +24,11 @@ public class RouteDefinitions {
         return () -> {
             path("/audio", () -> {
                 post("/upload", audioController::uploadAudio);
-                get("/files", audioController::getAllAudioFiles);
-                get("/analyze-all", audioController::analyzeAllAudioFiles);
-                get("/results", audioController::getAllAnalysisResults);
-                get("/analyze/{id}", audioController::analyzeSingleAudioFile);
+                get("/file", audioController::getAllAudioFiles);
+                get("/result", audioController::getAllAnalysisResults);
+                get("/graph/{id}", audioController::showGraph);
+                // get("/graph/updates", audioController::streamGraphUpdates);
+
 
             });
         };

@@ -2,23 +2,42 @@ package dat.controller;
 
 import dat.dao.AnalysisResultDAO;
 import dat.dao.AudioFileDAO;
+import dat.dtos.AnalysisResponseDTO;
+import dat.dtos.PitchPointDTO;
 import dat.entities.AnalysisResult;
 import dat.entities.AudioFile;
+import dat.exceptions.ApiException;
 import dat.service.AudioAnalysisService;
+import dat.service.ChartUtilsHelper;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class AudioController {
     private static final Logger logger = LoggerFactory.getLogger(AudioController.class);
@@ -26,97 +45,11 @@ public class AudioController {
     private final AudioFileDAO audioFileDAO;
     private final AnalysisResultDAO analysisResultDAO;
 
-    // Constructor
     public AudioController(AudioAnalysisService audioAnalysisService, AudioFileDAO audioFileDAO, AnalysisResultDAO analysisResultDAO) {
         this.audioAnalysisService = audioAnalysisService;
         this.audioFileDAO = audioFileDAO;
         this.analysisResultDAO = analysisResultDAO;
     }
-
-
-    public void analyzeSingleAudioFile(Context ctx) {
-        try {
-            logger.info("Received request to analyze single file.");
-            Long fileId = Long.parseLong(ctx.pathParam("id"));  // e.g., /analyze/1
-            logger.info("Parsed file ID: {}", fileId);
-
-            AudioFile audioFile = audioFileDAO.findById(fileId);
-            if (audioFile == null) {
-                ctx.status(404).result("Audio file not found.");
-                return;
-            }
-
-            Path filePath = Paths.get(System.getProperty("java.io.tmpdir"), audioFile.getFilename());
-            File file = filePath.toFile();
-            logger.info("Constructed file path: {}", filePath);
-
-            if (!file.exists()) {
-                ctx.status(404).result("Audio file not found in temp directory.");
-                return;
-            }
-
-            logger.info("Starting analysis...");
-            String result = audioAnalysisService.analyzeFile(file);
-            logger.info("Analysis result: {}", result);
-
-            AnalysisResult analysisResult = new AnalysisResult(audioFile, result);
-            analysisResultDAO.save(analysisResult);
-            logger.info("Saved analysis result to DB.");
-
-            ctx.json(Map.of(
-                    "file", audioFile.getFilename(),
-                    "result", result
-            ));
-        } catch (NumberFormatException e) {
-            ctx.status(400).result("Invalid file ID.");
-        } catch (Exception e) {
-            logger.error("Error analyzing file", e);  // Check console/log file for stack trace
-            ctx.status(500).result("Internal Server Error");
-        }
-    }
-
-
-
-
-    public void analyzeAllAudioFiles(Context ctx) {
-        try {
-            List<AudioFile> audioFiles = audioFileDAO.findAll();
-            List<Map<String, Object>> analysisResults = new ArrayList<>();
-
-            for (AudioFile audioFile : audioFiles) {
-                // Construct path to the saved file
-                Path filePath = Paths.get(System.getProperty("java.io.tmpdir"), audioFile.getFilename());
-                File file = filePath.toFile();
-
-                if (!file.exists()) {
-                    logger.warn("File {} not found in temp dir, skipping...", audioFile.getFilename());
-                    continue;
-                }
-
-                // Analyze the file
-                String result = audioAnalysisService.analyzeFile(file);
-
-                // Save result to DB
-                AnalysisResult analysisResult = new AnalysisResult(audioFile, result);
-                analysisResultDAO.save(analysisResult);
-
-                // Collect for response
-                analysisResults.add(Map.of(
-                        "file", audioFile.getFilename(),
-                        "result", result
-                ));
-            }
-
-            ctx.json(Map.of(
-                    "status", "success",
-                    "analyzed_files", analysisResults
-            ));
-        } catch (Exception e) {
-            e.printStackTrace();
-            ctx.status(500).json(Map.of("error", "Kunne ikke analysere filer"));
-        }
-    }
-
 
 
     public void uploadAudio(Context ctx) {
@@ -128,35 +61,34 @@ public class AudioController {
             }
 
             String fileName = uploadedFile.filename();
-            long fileSize = uploadedFile.size();
-
-            // Save temp file
             InputStream fileContent = uploadedFile.content();
             Path tempPath = Paths.get(System.getProperty("java.io.tmpdir"), fileName);
             Files.copy(fileContent, tempPath, StandardCopyOption.REPLACE_EXISTING);
+            File audioFile = tempPath.toFile();
 
-            // Save metadata to DB
-            AudioFile audioFileEntity = new AudioFile(fileName, fileSize);
-            audioFileDAO.save(audioFileEntity);
+            // Analyse og pitch data med timestamp
+            AnalysisResponseDTO response = audioAnalysisService.analyzeFile(audioFile);
+            AnalysisResult result = response.getResult();
+            List<PitchPointDTO> pitchPoints = response.getPitchPoints();
 
-            // ✅ Analyze the file with TarsosDSP
-            String analysisResult = audioAnalysisService.analyzeFile(tempPath.toFile());
+            // Generer graf
+            JFreeChart chart = ChartUtilsHelper.createChartFromPitchPoints(pitchPoints);
+            File chartFile = new File("pitch_graph.png");
+            ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
 
-            // ✅ Save the analysis result to DB
-            AnalysisResult result = new AnalysisResult(audioFileEntity, analysisResult);
-            analysisResultDAO.save(result);  // Make sure this DAO is initialized
+            // Send graf og info
+            ctx.contentType("image/png");
+            ctx.header("X-Audio-Info", "bpm=" + result.getAudioFile().getBpm());
+            ctx.result(Files.readAllBytes(chartFile.toPath()));
 
-            // ✅ Send back response with analysis summary
-            ctx.json(Map.of(
-                    "status", "success",
-                    "file", fileName,
-                    "message", analysisResult
-            ));
         } catch (Exception e) {
             e.printStackTrace();
             ctx.status(500).json(Map.of("error", "Kunne ikke analysere lydfil"));
         }
     }
+
+
+
 
     public void getAllAudioFiles(Context ctx) {
         try {
@@ -184,7 +116,80 @@ public class AudioController {
         }
     }
 
+    public void showGraph(Context ctx) {
+        try {
+            Long audioFileId = ctx.pathParamAsClass("id", Long.class).get();
 
+            // Hent analysedata
+            List<AnalysisResult> results = analysisResultDAO.findLatestByAudioFile(audioFileId, 1); // Én seneste analyse
+            if (results.isEmpty()) {
+                ctx.status(404).json(Map.of("error", "Ingen analyseresultater fundet for ID: " + audioFileId));
+                return;
+            }
+
+            AnalysisResult result = results.get(0);
+            String pitchData = result.getResultData();
+            String[] pitchTokens = pitchData.split(",");
+
+            // Hent audiofilens længde i sekunder
+            AudioFile audioFile = audioFileDAO.findById(audioFileId);
+            double durationInSeconds = getAudioFileDuration(audioFile.getFilename());
+
+            int numPitches = pitchTokens.length;
+            double timeStep = durationInSeconds / numPitches;
+
+            XYSeries series = new XYSeries("Pitch");
+            double minPitch = Double.MAX_VALUE;
+            double maxPitch = Double.MIN_VALUE;
+
+            for (int i = 0; i < pitchTokens.length; i++) {
+                try {
+                    double pitch = Double.parseDouble(pitchTokens[i].trim());
+                    if (pitch >= 20 && pitch <= 4000) {
+                        double time = i * timeStep;
+                        series.add(time, pitch);
+                        minPitch = Math.min(minPitch, pitch);
+                        maxPitch = Math.max(maxPitch, pitch);
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            // 📈 Lav graf
+            XYSeriesCollection dataset = new XYSeriesCollection(series);
+            JFreeChart chart = ChartFactory.createXYLineChart(
+                    "Pitch Graph for Audio ID: " + audioFileId,
+                    "Tid (sekunder)",
+                    "Pitch (Hz)",
+                    dataset,
+                    PlotOrientation.VERTICAL,
+                    false, true, false
+            );
+
+            if (series.getItemCount() > 0) {
+                chart.getXYPlot().getRangeAxis().setRange(minPitch - 10, maxPitch + 10);
+            }
+
+            File chartFile = new File("pitch_graph.png");
+            ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600);
+
+            ctx.contentType("image/png");
+            ctx.result(Files.readAllBytes(chartFile.toPath()));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ctx.status(500).json(Map.of("error", "Kunne ikke generere graf"));
+        }
+    }
+
+
+    public double getAudioFileDuration(String filename) throws Exception {
+        File file = new File(System.getProperty("java.io.tmpdir"), filename);
+        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(file)) {
+            AudioFormat format = audioInputStream.getFormat();
+            long frames = audioInputStream.getFrameLength();
+            return frames / format.getFrameRate();
+        }
+    }
 
 
 

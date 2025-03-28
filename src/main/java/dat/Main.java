@@ -15,7 +15,7 @@ public class Main {
 
         ApplicationConfig.getInstance()
                 .initiateServer()
-                .setRoute(RouteDefinitions.getRoutes())  // Brug routes fra separat klasse
+                .setRoute(RouteDefinitions.getRoutes())
                 .handleException()
                 .startServer(port);
 
