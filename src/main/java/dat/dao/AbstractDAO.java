@@ -65,12 +65,24 @@ public abstract class AbstractDAO<T> {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
-            em.remove(em.contains(entity) ? entity : em.merge(entity));
+
+            Object id = em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(entity);
+            if (id != null) {
+                @SuppressWarnings("unchecked")
+                Class<T> entityClass = (Class<T>) entity.getClass();
+                T managed = em.find(entityClass, id);
+                if (managed != null) {
+                    em.remove(managed);
+                }
+            }
+
             em.getTransaction().commit();
         } finally {
             em.close();
         }
     }
+
+
 
     public void merge(T entity) {
         EntityManager em = emf.createEntityManager();

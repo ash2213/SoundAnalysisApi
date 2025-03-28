@@ -23,10 +23,10 @@ import java.util.List;
 public class AudioAnalysisService {
 
     public AnalysisResponseDTO analyzeFile(File audioFile) {
-        System.out.println("\uD83C\uDFA7 Analyzing file: " + audioFile.getAbsolutePath());
+        System.out.println(" Analyzing file: " + audioFile.getAbsolutePath());
 
         if (!audioFile.exists() || !audioFile.isFile()) {
-            throw new RuntimeException("\uD83D\uDEAB Invalid file");
+            throw new RuntimeException(" Invalid file");
         }
 
         try {
@@ -90,18 +90,5 @@ public class AudioAnalysisService {
             e.printStackTrace();
             throw new ApiException(500, "Kunne ikke analysere lydfil: " + e.getMessage());
         }
-    }
-
-
-    private List<Double> smoothData(List<Double> data, int windowSize) {
-        List<Double> smoothed = new ArrayList<>();
-        for (int i = 0; i < data.size(); i++) {
-            int start = Math.max(0, i - windowSize);
-            int end = Math.min(data.size() - 1, i + windowSize);
-            List<Double> window = data.subList(start, end + 1);
-            double avg = window.stream().mapToDouble(Double::doubleValue).average().orElse(0);
-            smoothed.add(avg);
-        }
-        return smoothed;
     }
 }

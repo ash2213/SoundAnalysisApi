@@ -1,72 +1,63 @@
 package dat.controller;
 
-import dat.DatabaseException;
 import dat.dao.UserDAO;
 import dat.entities.User;
+import dat.exceptions.DatabaseException;
 import io.javalin.http.Context;
-import org.postgresql.jdbc2.optional.ConnectionPool;
 
 public class UserController {
 
-
-    public static void createUser(Context ctx, ConnectionPool connectionPool) {
+    public void createUser(Context ctx) {
         String email = ctx.formParam("email");
         String password1 = ctx.formParam("password1");
         String password2 = ctx.formParam("password2");
 
-        if (!password1.equals(password2)) {
-            ctx.attribute("message", "Passwords do not match");
+        if (email == null || password1 == null || password2 == null || !password1.equals(password2)) {
+            ctx.attribute("message", "Passwords do not match or fields are missing");
             ctx.render("register.html");
             return;
         }
 
         try {
-            UserDAO.createUser(email, password1, connectionPool);
+            UserDAO.createUser(email, password1);
             ctx.attribute("message", "Account created! Please log in.");
             ctx.render("login.html");
         } catch (DatabaseException e) {
-            ctx.attribute("message", e.getMessage());
+            ctx.attribute("message", "Registration failed: " + e.getMessage());
             ctx.render("register.html");
         }
     }
 
-    public static void login(Context ctx, ConnectionPool connectionPool) {
+    public void login(Context ctx) {
         String email = ctx.formParam("email");
         String password = ctx.formParam("password");
 
+        if (email == null || password == null) {
+            ctx.attribute("message", "Please fill in both fields");
+            ctx.render("login.html");
+            return;
+        }
+
         try {
-            User user = UserDAO.login(email, password, connectionPool);
+            User user = UserDAO.login(email, password);
             ctx.sessionAttribute("currentUser", user);
             ctx.sessionAttribute("isLoggedIn", true);
             ctx.sessionAttribute("userId", user.getUserId());
-
-            ctx.redirect("/dashboard"); // Redirect after login
+            ctx.redirect("/dashboard");
         } catch (DatabaseException e) {
-            ctx.attribute("message", "Invalid credentials");
+            ctx.attribute("message", "Login failed: " + e.getMessage());
             ctx.render("login.html");
         }
     }
 
-    public static void logout(Context ctx) {
-        ctx.sessionAttribute("currentUser", null);
-        ctx.sessionAttribute("isLoggedIn", false);
-        ctx.sessionAttribute("userId", null);
-
-        ctx.redirect("/");
+    public void logout(Context ctx) {
+        ctx.req().getSession().invalidate();
+        ctx.attribute("message", "You have been logged out.");
+        ctx.render("index.html");
     }
 
     public void renderHomePage(Context ctx) {
         ctx.attribute("message", "Welcome to Thymeleaf with Javalin 6!");
-        ctx.render("index.html"); // This will look for resources/templates/index.html
-    }
-    public static void dashboard(Context ctx) {
-        User user = ctx.sessionAttribute("currentUser");
-        if (user == null) {
-            ctx.redirect("/login");
-            return;
-        }
-
-        ctx.attribute("currentUser", user);
-        ctx.render("dashboard.html");
+        ctx.render("index.html");
     }
 }

@@ -1,11 +1,14 @@
 package dat.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "analysis_results")
 @Getter
@@ -24,8 +27,6 @@ public class AnalysisResult {
     private String resultData;
 
     private LocalDateTime analyzedAt;
-
-    public AnalysisResult() {}
 
     private AnalysisResult(AudioFile audioFile, String resultData) {
         this.audioFile = audioFile;

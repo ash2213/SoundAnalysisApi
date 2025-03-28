@@ -24,23 +24,16 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 
 public class AudioController {
-    private static final Logger logger = LoggerFactory.getLogger(AudioController.class);
     private final AudioAnalysisService audioAnalysisService;
     private final AudioFileDAO audioFileDAO;
     private final AnalysisResultDAO analysisResultDAO;
@@ -86,8 +79,6 @@ public class AudioController {
             ctx.status(500).json(Map.of("error", "Kunne ikke analysere lydfil"));
         }
     }
-
-
 
 
     public void getAllAudioFiles(Context ctx) {
@@ -151,7 +142,8 @@ public class AudioController {
                         minPitch = Math.min(minPitch, pitch);
                         maxPitch = Math.max(maxPitch, pitch);
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
 
             // 📈 Lav graf
@@ -190,7 +182,6 @@ public class AudioController {
             return frames / format.getFrameRate();
         }
     }
-
 
 
 }

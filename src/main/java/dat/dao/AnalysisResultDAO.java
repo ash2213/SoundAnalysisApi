@@ -3,9 +3,7 @@ package dat.dao;
 import dat.entities.AnalysisResult;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
-
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class AnalysisResultDAO extends AbstractDAO<AnalysisResult> {
@@ -24,24 +22,22 @@ public class AnalysisResultDAO extends AbstractDAO<AnalysisResult> {
                     .getResultList();
 
             if (results.isEmpty()) {
-                return null; // No result found
+                return null;
             }
-            return results.get(0); // Return the first result
+            return results.get(0);
         } finally {
             em.close();
         }
     }
-    // Method to find latest AnalysisResults by audioFileId with a limit
+
     public List<AnalysisResult> findLatestByAudioFile(Long audioFileId, int limit) {
         return findAnalysisResultsByAudioFileAndTimeRange(audioFileId, null, null, limit);
     }
 
-    // Method to find by audioFileId and time range
     public List<AnalysisResult> findByAudioFileIdAndTimeRange(Long audioFileId, LocalDateTime startTime, LocalDateTime endTime, int limit) {
         return findAnalysisResultsByAudioFileAndTimeRange(audioFileId, startTime, endTime, limit);
     }
 
-    // Helper method to avoid duplicate code
     private List<AnalysisResult> findAnalysisResultsByAudioFileAndTimeRange(Long audioFileId, LocalDateTime startTime, LocalDateTime endTime, int limit) {
         EntityManager em = emf.createEntityManager();
         try {

@@ -19,11 +19,17 @@
         <jackson.version>2.17.0</jackson.version>
         <restassured.version>5.4.0</restassured.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <tarsos.version>2.4</tarsos.version> <!-- Working version tag -->
+        <testcontainers.version>1.18.0</testcontainers.version>
     </properties>
 
     <dependencies>
         <!-- 🔹 Javalin -->
+
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
@@ -101,7 +107,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 🔹 TarsosDSP via JitPack -->
+        <!-- 🔹 TarsosDSP -->
         <dependency>
             <groupId>be.tarsos.dsp</groupId>
             <artifactId>core</artifactId>
@@ -149,7 +155,6 @@
 
     <build>
         <plugins>
-            <!-- ✅ Maven Compiler Plugin med release 17 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

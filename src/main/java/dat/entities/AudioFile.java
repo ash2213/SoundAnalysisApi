@@ -2,16 +2,20 @@ package dat.entities;
 
 import dat.dao.AudioFileDAO;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.File;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "audio_files")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "audio_files")
 public class AudioFile {
 
     @Id
@@ -26,10 +30,6 @@ public class AudioFile {
     @Column(name="bpm")
     private Double bpm;
 
-
-    public AudioFile() {
-        // Default constructor
-    }
 
     public AudioFile(String filename, long sizeBytes) {
         this.filename = filename;

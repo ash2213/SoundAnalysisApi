@@ -8,13 +8,10 @@ import dat.enums.Role;
 import dat.service.AudioAnalysisService;
 import dat.config.HibernateConfig;
 import io.javalin.apibuilder.EndpointGroup;
-import org.postgresql.jdbc2.optional.ConnectionPool;
-
 import static io.javalin.apibuilder.ApiBuilder.*;
-
 public class RouteDefinitions {
 
-    public static EndpointGroup getRoutes(ConnectionPool connectionPool) {
+    public static EndpointGroup getRoutes() {
 
         var emf = HibernateConfig.getEntityManagerFactory();
         AudioFileDAO audioFileDAO = new AudioFileDAO();
@@ -26,26 +23,15 @@ public class RouteDefinitions {
 
         return () -> {
             path("/audio", () -> {
-                post("/upload", audioController::uploadAudio,Role.USER);
-                get("/file", audioController::getAllAudioFiles,Role.ANYONE);
-                get("/result", audioController::getAllAnalysisResults,Role.ANYONE);
+                post("/upload", audioController::uploadAudio, Role.USER);
+                get("/file", audioController::getAllAudioFiles, Role.ANYONE);
+                get("/result", audioController::getAllAnalysisResults, Role.ANYONE);
                 get("/graph/{id}", audioController::showGraph, Role.ANYONE);
             });
             path("/user", () -> {
-                post("/register", ctx -> userController.createUser(ctx, connectionPool), Role.ANYONE);
-                post("/login", ctx -> userController.login(ctx, connectionPool), Role.USER);
-              //  get("/logout", ctx -> userController.logout(ctx)); // ✅ Fixed
+                post("/register", userController::createUser, Role.ANYONE);
+                post("/login", userController::login, Role.USER);
             });
-
-            get("/", userController::renderHomePage);
-
-//            get("/dashboard", ctx -> {
-//                if (ctx.sessionAttribute("isLoggedIn") == Boolean.TRUE) {
-//                    userController.dashboard(ctx);
-//                } else {
-//                    ctx.redirect("/login");
-//                }
-            };//);
         };
     }
-//}
+}

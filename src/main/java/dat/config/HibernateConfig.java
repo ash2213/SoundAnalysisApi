@@ -36,7 +36,7 @@ public class HibernateConfig {
     public static EntityManagerFactory getEntityManagerFactoryForTest() {
         if (emfTest == null){
             setTest(true);
-            emfTest = createEMF(getTest());  // No DB needed for test
+            emfTest = createEMF(getTest());
         }
         return emfTest;
     }

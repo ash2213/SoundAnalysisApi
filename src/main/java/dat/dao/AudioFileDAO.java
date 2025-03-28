@@ -17,7 +17,7 @@ public class AudioFileDAO extends AbstractDAO<AudioFile> {
                             "SELECT a FROM AudioFile a WHERE a.filename = :fileName", AudioFile.class)
                     .setParameter("fileName", fileName)
                     .getResultList();
-            return results.isEmpty() ? null : results.get(0); // Return null if file is not found
+            return results.isEmpty() ? null : results.get(0);
         } finally {
             em.close();
         }
