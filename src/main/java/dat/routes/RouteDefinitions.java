@@ -4,6 +4,7 @@ import dat.controller.UserController;
 import dat.controller.AudioController;
 import dat.dao.AudioFileDAO;
 import dat.dao.AnalysisResultDAO;
+import dat.enums.Role;
 import dat.service.AudioAnalysisService;
 import dat.config.HibernateConfig;
 import io.javalin.apibuilder.EndpointGroup;
@@ -15,36 +16,29 @@ public class RouteDefinitions {
 
     public static EndpointGroup getRoutes(ConnectionPool connectionPool) {
 
-        // 🎯 Initialize dependencies
         var emf = HibernateConfig.getEntityManagerFactory();
         AudioFileDAO audioFileDAO = new AudioFileDAO();
         AnalysisResultDAO analysisResultDAO = new AnalysisResultDAO();
         AudioAnalysisService audioAnalysisService = new AudioAnalysisService();
 
-        // 🎯 Initialize controllers
         AudioController audioController = new AudioController(audioAnalysisService, audioFileDAO, analysisResultDAO);
         UserController userController = new UserController();
 
         return () -> {
-            // 🎵 Audio-related routes
             path("/audio", () -> {
-                post("/upload", audioController::uploadAudio);
-                get("/file", audioController::getAllAudioFiles);
-                get("/result", audioController::getAllAnalysisResults);
-                get("/graph/{id}", audioController::showGraph);
+                post("/upload", audioController::uploadAudio,Role.USER);
+                get("/file", audioController::getAllAudioFiles,Role.ANYONE);
+                get("/result", audioController::getAllAnalysisResults,Role.ANYONE);
+                get("/graph/{id}", audioController::showGraph, Role.ANYONE);
             });
-
-            // 👤 User authentication routes
             path("/user", () -> {
-                post("/register", ctx -> userController.createUser(ctx, connectionPool));
-                post("/login", ctx -> userController.login(ctx, connectionPool));
+                post("/register", ctx -> userController.createUser(ctx, connectionPool), Role.ANYONE);
+                post("/login", ctx -> userController.login(ctx, connectionPool), Role.USER);
               //  get("/logout", ctx -> userController.logout(ctx)); // ✅ Fixed
             });
 
-            // 🏠 Homepage route
             get("/", userController::renderHomePage);
 
-            // 📊 Dashboard route (only accessible if logged in)
 //            get("/dashboard", ctx -> {
 //                if (ctx.sessionAttribute("isLoggedIn") == Boolean.TRUE) {
 //                    userController.dashboard(ctx);

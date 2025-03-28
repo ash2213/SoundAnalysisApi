@@ -37,7 +37,6 @@ public class ApplicationConfig {
 
     public ApplicationConfig initiateServer() {
         app = Javalin.create(config -> {
-            config.staticFiles.add("/public", Location.CLASSPATH); // ✅ Serve static files (CSS, JS)
 
             // ✅ Manually set Thymeleaf as file renderer
             config.fileRenderer(ThymeleafConfig.getFileRenderer());
