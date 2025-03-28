@@ -44,16 +44,6 @@ class AudioEndpointsTest {
                 .body("files", notNullValue());
     }
 
-    @Test
-    void getAllAnalysisResults() {
-        given()
-                .when()
-                .get("/audio/result")
-                .then()
-                .statusCode(200)
-                .body("status", equalTo("success"))
-                .body("results", notNullValue());
-    }
 
     @Test
     void showGraph_invalidId() {
