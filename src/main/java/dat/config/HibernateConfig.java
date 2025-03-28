@@ -2,6 +2,8 @@ package dat.config;
 
 import dat.entities.AnalysisResult;
 import dat.entities.AudioFile;
+import dat.entities.Role;
+import dat.entities.User;
 import dat.utils.Utils;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
@@ -43,6 +45,8 @@ public class HibernateConfig {
     private static void getAnnotationConfiguration(Configuration configuration) {
            configuration.addAnnotatedClass(AudioFile.class);
            configuration.addAnnotatedClass(AnalysisResult.class);
+           configuration.addAnnotatedClass(Role.class);
+           configuration.addAnnotatedClass(User.class);
 
     }
 
