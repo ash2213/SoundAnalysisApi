@@ -6,8 +6,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.config.JavalinConfig;
+import io.javalin.http.staticfiles.Location;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import static io.javalin.apibuilder.ApiBuilder.path;
 
@@ -32,14 +34,21 @@ public class ApplicationConfig {
         app.stop();
     }
 
+
     public ApplicationConfig initiateServer() {
         app = Javalin.create(config -> {
+            config.staticFiles.add("/public", Location.CLASSPATH); // ✅ Serve static files (CSS, JS)
+
+            // ✅ Manually set Thymeleaf as file renderer
+            config.fileRenderer(ThymeleafConfig.getFileRenderer());
+
             javalinConfig = config;
             config.http.defaultContentType = "application/json; charset=utf-8";
             config.router.contextPath = "/api";
-            config.jsonMapper(new io.javalin.json.JavalinJackson(objectMapper,false)); // Use the field
+            config.jsonMapper(new io.javalin.json.JavalinJackson(objectMapper, false));
             config.bundledPlugins.enableRouteOverview("/routes");
         });
+
         return applicationConfig;
     }
 
