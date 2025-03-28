@@ -12,6 +12,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <hibernate.version>6.6.6.Final</hibernate.version>
         <junit.version>5.11.4</junit.version>
         <postgres.version>42.7.5</postgres.version>
@@ -23,20 +24,14 @@
     </properties>
 
     <dependencies>
-        <!-- 🔹 Javalin -->
-
-        <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
-        </dependency>
+        <!-- ✅ Javalin -->
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
             <version>${javalin.version}</version>
         </dependency>
 
-        <!-- 🔹 Jackson Core + JSR310 (Java Time) -->
+        <!-- ✅ Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -48,21 +43,28 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- 🔹 PostgreSQL Driver -->
+        <!-- ✅ PostgreSQL Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>${postgres.version}</version>
         </dependency>
 
-        <!-- 🔹 Hibernate ORM -->
+        <!-- ✅ Hibernate ORM -->
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
             <version>${hibernate.version}</version>
         </dependency>
 
-        <!-- 🔹 Lombok -->
+        <!-- ✅ BCrypt for hashing -->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
+
+        <!-- ✅ Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -70,14 +72,45 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- 🔹 SLF4J + Logback -->
+        <!-- ✅ Thymeleaf -->
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <version>3.1.1.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-java8time</artifactId>
+            <version>3.0.4.RELEASE</version>
+        </dependency>
+
+        <!-- ✅ SLF4J + Logback -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.4.14</version>
         </dependency>
 
-        <!-- 🔹 JUnit 5 -->
+        <!-- ✅ JFreeChart -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.3</version>
+        </dependency>
+
+        <!-- ✅ TarsosDSP -->
+        <dependency>
+            <groupId>be.tarsos.dsp</groupId>
+            <artifactId>core</artifactId>
+            <version>2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>be.tarsos.dsp</groupId>
+            <artifactId>jvm</artifactId>
+            <version>2.5</version>
+        </dependency>
+
+        <!-- ✅ JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -91,7 +124,27 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 🔹 RestAssured for API Testing -->
+        <!-- ✅ Testcontainers (Postgres + JUnit 5) -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ✅ RestAssured -->
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
@@ -99,49 +152,13 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 🔹 Hamcrest -->
+        <!-- ✅ Hamcrest -->
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
             <version>${hamcrest.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- 🔹 TarsosDSP -->
-        <dependency>
-            <groupId>be.tarsos.dsp</groupId>
-            <artifactId>core</artifactId>
-            <version>2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>be.tarsos.dsp</groupId>
-            <artifactId>jvm</artifactId>
-            <version>2.5</version>
-        </dependency>
-
-        <!-- 🔹 JFreeChart -->
-        <dependency>
-            <groupId>org.jfree</groupId>
-            <artifactId>jfreechart</artifactId>
-            <version>1.5.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.thymeleaf</groupId>
-            <artifactId>thymeleaf</artifactId>
-            <version>3.1.1.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>org.thymeleaf.extras</groupId>
-            <artifactId>thymeleaf-extras-java8time</artifactId>
-            <version>3.0.4.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
-        </dependency>
-
     </dependencies>
 
     <repositories>
@@ -152,9 +169,9 @@
         </repository>
     </repositories>
 
-
     <build>
         <plugins>
+            <!-- ✅ Java compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -164,6 +181,7 @@
                 </configuration>
             </plugin>
 
+            <!-- ✅ Shade plugin for building a runnable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -187,7 +205,7 @@
                 </executions>
             </plugin>
 
-            <!-- 🔹 Maven Surefire for JUnit tests -->
+            <!-- ✅ Surefire plugin til JUnit 5 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
