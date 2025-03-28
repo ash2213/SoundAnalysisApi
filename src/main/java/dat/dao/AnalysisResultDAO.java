@@ -11,7 +11,7 @@ public class AnalysisResultDAO extends AbstractDAO<AnalysisResult> {
         super(AnalysisResult.class);
     }
 
-    public void deleteByAudioFileId(int audioFileId) {
+    public void deleteByAudioFileId(Long audioFileId) {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();

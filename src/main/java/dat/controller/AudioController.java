@@ -25,6 +25,7 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -197,8 +198,8 @@ public class AudioController {
 
     // DELETE /audio/{id}
     public Handler deleteAudio = ctx -> {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        AudioFile audioFile = audioFileDAO.findById((long) id);
+        Long id = Long.parseLong(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById(id);
         if (audioFile == null) throw new ApiException(404, "Audio file not found");
 
         // Slet tilhørende analysis results
@@ -216,15 +217,15 @@ public class AudioController {
 
 
     public void getAudioById(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        AudioFile audioFile = audioFileDAO.findById((long) id);
+        Long id = Long.parseLong(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById(id);
         if (audioFile == null) throw new ApiException(404, "Audio file not found");
         ctx.json(audioFile);
     }
 
-    public void deleteAudio(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        AudioFile audioFile = audioFileDAO.findById((long) id);
+    public void deleteAudio(Context ctx) throws IOException {
+        Long id = Long.parseLong(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById(id);
         if (audioFile == null) throw new ApiException(404, "Audio file not found");
 
         // Slet tilhørende analysis results
@@ -235,17 +236,17 @@ public class AudioController {
         Files.deleteIfExists(pathToDelete);
 
         // Slet lydfil fra DB
-        audioFileDAO.delete((long) id);
+        audioFileDAO.delete(audioFile);
 
         ctx.status(204);
     }
 
-    public void updateAudio(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
+    public void updateAudio(Context ctx) throws IOException {
+        Long id = Long.parseLong(ctx.pathParam("id"));
         UploadedFile uploadedFile = ctx.uploadedFile("file");
         if (uploadedFile == null) throw new ApiException(400, "No file uploaded");
 
-        AudioFile oldFile = audioFileDAO.findById((long) id);
+        AudioFile oldFile = audioFileDAO.findById(id);
         if (oldFile == null) throw new ApiException(404, "Audio file not found");
 
         // Slet gammel fil (udled path fra filnavn)
