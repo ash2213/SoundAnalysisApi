@@ -10,6 +10,7 @@ import dat.exceptions.ApiException;
 import dat.service.AudioAnalysisService;
 import dat.service.ChartUtilsHelper;
 import io.javalin.http.Context;
+import io.javalin.http.Handler;
 import io.javalin.http.UploadedFile;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
@@ -29,14 +30,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.List;
 
 
 public class AudioController {
-    private final AudioAnalysisService audioAnalysisService;
-    private final AudioFileDAO audioFileDAO;
-    private final AnalysisResultDAO analysisResultDAO;
+    private AudioAnalysisService audioAnalysisService;
+    private AudioFileDAO audioFileDAO;
+    private AnalysisResultDAO analysisResultDAO;
 
     public AudioController(AudioAnalysisService audioAnalysisService, AudioFileDAO audioFileDAO, AnalysisResultDAO analysisResultDAO) {
         this.audioAnalysisService = audioAnalysisService;
@@ -182,6 +184,99 @@ public class AudioController {
             return frames / format.getFrameRate();
         }
     }
+
+    // INDSÆT i AudioController.java
+
+    // GET /audio/{id}
+    public Handler getAudioById = ctx -> {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById((long) id);
+        if (audioFile == null) throw new ApiException(404, "Audio file not found");
+        ctx.json(audioFile);
+    };
+
+    // DELETE /audio/{id}
+    public Handler deleteAudio = ctx -> {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById((long) id);
+        if (audioFile == null) throw new ApiException(404, "Audio file not found");
+
+        // Slet tilhørende analysis results
+        analysisResultDAO.deleteByAudioFileId(id);
+
+        // Slet fil fra disk
+        Path filePath = Paths.get(audioFile.getFilename());
+        Files.deleteIfExists(filePath);
+
+        // Slet lydfil fra DB
+        audioFileDAO.delete(audioFile);
+
+        ctx.status(204);
+    };
+
+
+    public void getAudioById(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById((long) id);
+        if (audioFile == null) throw new ApiException(404, "Audio file not found");
+        ctx.json(audioFile);
+    }
+
+    public void deleteAudio(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        AudioFile audioFile = audioFileDAO.findById((long) id);
+        if (audioFile == null) throw new ApiException(404, "Audio file not found");
+
+        // Slet tilhørende analysis results
+        analysisResultDAO.deleteByAudioFileId(id);
+
+        // Slet fil fra disk
+        Path pathToDelete = Paths.get("audio_uploads/" + audioFile.getFilename());
+        Files.deleteIfExists(pathToDelete);
+
+        // Slet lydfil fra DB
+        audioFileDAO.delete((long) id);
+
+        ctx.status(204);
+    }
+
+    public void updateAudio(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        UploadedFile uploadedFile = ctx.uploadedFile("file");
+        if (uploadedFile == null) throw new ApiException(400, "No file uploaded");
+
+        AudioFile oldFile = audioFileDAO.findById((long) id);
+        if (oldFile == null) throw new ApiException(404, "Audio file not found");
+
+        // Slet gammel fil (udled path fra filnavn)
+        Path oldPath = Paths.get("audio_uploads/" + oldFile.getFilename());
+        Files.deleteIfExists(oldPath);
+
+        // Gem ny fil
+        String newFileName = uploadedFile.filename();
+        Path newPath = Paths.get("audio_uploads/" + newFileName);
+        try (InputStream is = uploadedFile.content()) {
+            Files.copy(is, newPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // Opdater info
+        oldFile.setFilename(newFileName);
+        oldFile.setSizeBytes(uploadedFile.size());
+        oldFile.setUploadedAt(LocalDateTime.now());
+        audioFileDAO.update(oldFile);
+
+        // Slet gamle analyser
+        analysisResultDAO.deleteByAudioFileId(id);
+
+        // Kør ny analyse
+        File newFile = newPath.toFile();
+        AnalysisResponseDTO response = audioAnalysisService.analyzeFile(newFile);
+
+        ctx.json(response);
+    }
+
+
+
 
 
 }

@@ -11,7 +11,23 @@ public class AnalysisResultDAO extends AbstractDAO<AnalysisResult> {
         super(AnalysisResult.class);
     }
 
-
+    public void deleteByAudioFileId(int audioFileId) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            em.getTransaction().begin();
+            em.createQuery("DELETE FROM AnalysisResult ar WHERE ar.audioFile.id = :id")
+                    .setParameter("id", audioFileId)
+                    .executeUpdate();
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw e;
+        } finally {
+            em.close();
+        }
+    }
 
     public AnalysisResult findByAudioFileId(Long audioFileId) {
         EntityManager em = emf.createEntityManager();

@@ -25,8 +25,11 @@ public class RouteDefinitions {
             path("/audio", () -> {
                 post("/upload", audioController::uploadAudio, Role.USER);
                 get("/file", audioController::getAllAudioFiles, Role.ANYONE);
+                get("/{id}", audioController::getAudioById, Role.ANYONE);
                 get("/result", audioController::getAllAnalysisResults, Role.ANYONE);
+                delete("/{id}", audioController::deleteAudio,Role.USER);
                 get("/graph/{id}", audioController::showGraph, Role.ANYONE);
+                put("/{id}", audioController::updateAudio, Role.USER);
             });
             path("/user", () -> {
                 post("/register", userController::createUser, Role.ANYONE);
