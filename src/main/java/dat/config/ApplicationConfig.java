@@ -36,15 +36,24 @@ public class ApplicationConfig {
 
     public ApplicationConfig initiateServer() {
         app = Javalin.create(config -> {
-
             javalinConfig = config;
             config.http.defaultContentType = "application/json; charset=utf-8";
             config.router.contextPath = "/api";
             config.bundledPlugins.enableRouteOverview("/routes");
         });
 
+        // Manuelt CORS-setup
+        app.before(ctx -> {
+            ctx.header("Access-Control-Allow-Origin", "https://shadowbox.dk");
+            ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        });
+
+        app.options("/*", ctx -> ctx.status(204));
+
         return applicationConfig;
     }
+
 
     public ApplicationConfig setRoute(EndpointGroup route) {
         if (routesRegistered) {
