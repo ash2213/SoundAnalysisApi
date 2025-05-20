@@ -6,6 +6,8 @@ import dat.entities.User;
 import dat.exceptions.DatabaseException;
 import io.javalin.http.Context;
 import dat.utils.JwtUtils;
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.util.Map;
 
 public class UserController {
@@ -35,26 +37,28 @@ public class UserController {
 
     // ---------- API: JSON-based login (POST /api/user/login) ----------
     public void login(Context ctx) {
-        UserDTO dto = ctx.bodyAsClass(UserDTO.class);
-        String email = dto.getEmail();
-        String password = dto.getPassword();
-
-        if (email == null || password == null || email.isBlank() || password.isBlank()) {
-            ctx.status(400).result("Missing email or password");
-            return;
-        }
-
         try {
-            User user = UserDAO.login(email, password); // this verifies the user and returns the User object
+            System.out.println("🔐 Login started");
 
-            // ✅ Generate JWT token based on email or user ID
+            UserDTO dto = ctx.bodyAsClass(UserDTO.class);
+            String email = dto.getEmail();
+            String password = dto.getPassword();
+            System.out.println("📨 Email: " + email);
+
+            User user = UserDAO.login(email, password); // Can still throw exception
+            System.out.println("✅ User authenticated: " + user.getEmail());
+
+            // JWT could fail if misconfigured
             String token = JwtUtils.generateToken(user.getEmail());
+            System.out.println("🔑 Token created: " + token);
 
-            // ✅ Return token instead of the user object
             ctx.status(200).json(Map.of("token", token));
-
-        } catch (DatabaseException e) {
-            ctx.status(401).result("Login failed: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Login failed: " + e.getMessage());
+            e.printStackTrace();
+            ctx.status(500).json(Map.of("error", "Login failed: " + e.getMessage()));
         }
     }
+
+
 }
