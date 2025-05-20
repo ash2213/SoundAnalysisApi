@@ -14,17 +14,15 @@ public class JwtUtils {
     private static final long EXPIRATION_TIME_MS = 86400000; // 24 hours
 
     private static Key loadSecretKey() {
-        try {
-            Properties props = new Properties();
-            props.load(JwtUtils.class.getClassLoader().getResourceAsStream("config.properties"));
-            String base64Key = System.getenv("JWT_SECRET");
-
-            byte[] decodedKey = Base64.getDecoder().decode(base64Key);
-            return Keys.hmacShaKeyFor(decodedKey);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load JWT secret key", e);
+        String base64Key = System.getenv("JWT_SECRET");
+        if (base64Key == null || base64Key.isEmpty()) {
+            throw new RuntimeException("❌ JWT_SECRET environment variable is not set");
         }
+
+        byte[] decodedKey = Base64.getDecoder().decode(base64Key);
+        return Keys.hmacShaKeyFor(decodedKey);
     }
+
 
     public static String generateToken(String email) {
         return Jwts.builder()
