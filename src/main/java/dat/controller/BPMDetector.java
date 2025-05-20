@@ -25,7 +25,7 @@ public class BPMDetector {
 
         ComplexOnsetDetector detector = new ComplexOnsetDetector(bufferSize, overlap);
         detector.setHandler(handler);
-        detector.setThreshold(0.1); // Du kan justere denne
+        detector.setThreshold(0.3); // Du kan justere denne
 
         dispatcher.addAudioProcessor(detector);
         dispatcher.run();
