@@ -6,9 +6,10 @@ import dat.entities.User;
 import dat.exceptions.DatabaseException;
 import io.javalin.http.Context;
 
+import java.util.Map;
+
 public class UserController {
 
-    // ---------- API: JSON-based registration (POST /api/user/register) ----------
     public void createUser(Context ctx) {
         UserDTO dto = ctx.bodyAsClass(UserDTO.class);
 
@@ -16,15 +17,19 @@ public class UserController {
         String password = dto.getPassword();
 
         if (email == null || password == null || email.isBlank() || password.isBlank()) {
-            ctx.status(400).result("Missing email or password");
+            ctx.status(400).json(Map.of("error", "Missing email or password"));
             return;
         }
 
         try {
             UserDAO.createUser(email, password);
-            ctx.status(201).result("User created successfully");
+            ctx.status(201).json(Map.of("message", "User created successfully"));
         } catch (DatabaseException e) {
-            ctx.status(400).result("Registration failed: " + e.getMessage());
+            if (e.getMessage().toLowerCase().contains("duplicate")) {
+                ctx.status(409).json(Map.of("error", "Email already exists"));
+            } else {
+                ctx.status(500).json(Map.of("error", "Registration failed: " + e.getMessage()));
+            }
         }
     }
 
