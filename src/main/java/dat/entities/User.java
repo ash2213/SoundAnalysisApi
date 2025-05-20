@@ -21,7 +21,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(
@@ -35,10 +35,10 @@ public class User {
 
     public User() { }
 
-    public User(int userId, String email, String password, boolean isAdmin) {
+    public User(int userId, String email, String passwordHash, boolean isAdmin) {
         this.userId = userId;
         this.email = email;
-        this.password = password;
+        this.passwordHash = passwordHash;
         this.isAdmin = isAdmin;
     }
 
