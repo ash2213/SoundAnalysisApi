@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.config.JavalinConfig;
+import io.javalin.http.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,28 +37,15 @@ public class ApplicationConfig {
 
     public ApplicationConfig initiateServer() {
         app = Javalin.create(config -> {
+
             javalinConfig = config;
             config.http.defaultContentType = "application/json; charset=utf-8";
             config.router.contextPath = "/api";
             config.bundledPlugins.enableRouteOverview("/routes");
         });
 
-        // Manuelt CORS-setup
-        app.before(ctx -> {
-            try {
-                ctx.header("Access-Control-Allow-Origin", "https://shadowbox.dk");
-                ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-            } catch (Exception e) {
-                e.printStackTrace(); // Debug logs i tests
-            }
-        });
-
-        app.options("/*", ctx -> ctx.status(204));
-
         return applicationConfig;
     }
-
 
     public ApplicationConfig setRoute(EndpointGroup route) {
         if (routesRegistered) {
@@ -74,6 +62,8 @@ public class ApplicationConfig {
 
     public ApplicationConfig startServer(int port) {
         app.start(port);
+        app.before(ApplicationConfig::corsHeaders);
+        app.options("/*", ApplicationConfig::corsHeadersOptions);
         return applicationConfig;
     }
 
@@ -86,4 +76,20 @@ public class ApplicationConfig {
         });
         return applicationConfig;
     }
+
+    private static void corsHeaders(Context ctx) {
+        ctx.header("Access-Control-Allow-Origin", "*");
+        ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        ctx.header("Access-Control-Allow-Credentials", "true");
+    }
+
+    private static void corsHeadersOptions(Context ctx) {
+        ctx.header("Access-Control-Allow-Origin", "*");
+        ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        ctx.header("Access-Control-Allow-Credentials", "true");
+        ctx.status(204);
+    }
+
 }
