@@ -1,13 +1,55 @@
 package dat.controller;
 
 import dat.dao.UserDAO;
+import dat.dtos.UserDTO;
 import dat.entities.User;
 import dat.exceptions.DatabaseException;
 import io.javalin.http.Context;
 
 public class UserController {
 
+    // ---------- API: JSON-based registration (POST /api/user/register) ----------
     public void createUser(Context ctx) {
+        UserDTO dto = ctx.bodyAsClass(UserDTO.class);
+
+        String email = dto.getEmail();
+        String password = dto.getPassword();
+
+        if (email == null || password == null || email.isBlank() || password.isBlank()) {
+            ctx.status(400).result("Missing email or password");
+            return;
+        }
+
+        try {
+            UserDAO.createUser(email, password);
+            ctx.status(201).result("User created successfully");
+        } catch (DatabaseException e) {
+            ctx.status(400).result("Registration failed: " + e.getMessage());
+        }
+    }
+
+    // ---------- API: JSON-based login (POST /api/user/login) ----------
+    public void login(Context ctx) {
+        UserDTO dto = ctx.bodyAsClass(UserDTO.class);
+        String email = dto.getEmail();
+        String password = dto.getPassword();
+
+        if (email == null || password == null || email.isBlank() || password.isBlank()) {
+            ctx.status(400).result("Missing email or password");
+            return;
+        }
+
+        try {
+            User user = UserDAO.login(email, password);
+            // Her kan du evt. generere og returnere en JWT
+            ctx.status(200).json(user); // eller bare: ctx.result("Login successful");
+        } catch (DatabaseException e) {
+            ctx.status(401).result("Login failed: " + e.getMessage());
+        }
+    }
+
+    // ---------- HTML-based (form) registration ----------
+    public void createUserHtmlForm(Context ctx) {
         String email = ctx.formParam("email");
         String password1 = ctx.formParam("password1");
         String password2 = ctx.formParam("password2");
@@ -28,7 +70,8 @@ public class UserController {
         }
     }
 
-    public void login(Context ctx) {
+    // ---------- HTML-based login ----------
+    public void loginHtmlForm(Context ctx) {
         String email = ctx.formParam("email");
         String password = ctx.formParam("password");
 

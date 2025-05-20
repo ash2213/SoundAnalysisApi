@@ -33,7 +33,7 @@ public class RouteDefinitions {
             });
             path("/user", () -> {
                 post("/register", userController::createUser, Role.ANYONE);
-                post("/login", userController::login, Role.USER);
+                post("/login", userController::login, Role.ANYONE);
             });
         };
     }
