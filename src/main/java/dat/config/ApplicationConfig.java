@@ -44,9 +44,13 @@ public class ApplicationConfig {
 
         // Manuelt CORS-setup
         app.before(ctx -> {
-            ctx.header("Access-Control-Allow-Origin", "https://shadowbox.dk");
-            ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            try {
+                ctx.header("Access-Control-Allow-Origin", "https://shadowbox.dk");
+                ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+                ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            } catch (Exception e) {
+                e.printStackTrace(); // Debug logs i tests
+            }
         });
 
         app.options("/*", ctx -> ctx.status(204));
