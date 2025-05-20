@@ -1,5 +1,12 @@
 FROM openjdk:17-jdk-slim
 
+# Installer libfreetype og standard-fonts til JFreeChart
+RUN apt-get update && \
+    apt-get install -y libfreetype6 fonts-dejavu-core && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Miljøvariabler
 ARG DB_NAME
 ARG DB_USERNAME
 ARG DB_PASSWORD
@@ -18,6 +25,7 @@ ENV DB_NAME=$DB_NAME \
     TOKEN_EXPIRE_TIME=$TOKEN_EXPIRE_TIME \
     DEPLOYED=$DEPLOYED
 
+# App setup
 WORKDIR /app
 COPY target/app.jar app.jar
 
