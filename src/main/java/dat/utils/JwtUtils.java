@@ -17,7 +17,7 @@ public class JwtUtils {
         try {
             Properties props = new Properties();
             props.load(JwtUtils.class.getClassLoader().getResourceAsStream("config.properties"));
-            String base64Key = props.getProperty("jwt.secret");
+            String base64Key = System.getenv("JWT_SECRET");
 
             byte[] decodedKey = Base64.getDecoder().decode(base64Key);
             return Keys.hmacShaKeyFor(decodedKey);
